@@ -1,0 +1,51 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: task2-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  publisher:
+    build: ./publisher
+    container_name: task2-publisher
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      RABBITMQ_HOST: rabbitmq
+
+  accounting:
+    build: ./consumer
+    container_name: task2-accounting
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      DEPARTMENT: "Бухгалтерия"
+
+  oil_depot:
+    build: ./consumer
+    container_name: task2-oil-depot
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      DEPARTMENT: "Нефтебаза"
+
+  analytics:
+    build: ./consumer
+    container_name: task2-analytics
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      RABBITMQ_HOST: rabbitmq
+      DEPARTMENT: "Аналитический отдел"
