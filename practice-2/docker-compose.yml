@@ -1,0 +1,60 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  processor:
+    build: .
+    container_name: repair-processor
+    command: python processor.py
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  drilling:
+    build: .
+    container_name: drilling-service
+    command: python worker.py
+    environment:
+      WORK_TYPE: drilling
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  electrical:
+    build: .
+    container_name: electrical-service
+    command: python worker.py
+    environment:
+      WORK_TYPE: electrical
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  logistics:
+    build: .
+    container_name: logistics-service
+    command: python worker.py
+    environment:
+      WORK_TYPE: logistics
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  initiator:
+    build: .
+    container_name: repair-initiator
+    command: python initiator.py
+    profiles:
+      - manual
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
